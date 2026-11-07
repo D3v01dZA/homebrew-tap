@@ -35,7 +35,8 @@ cask "tinylogi" do
     Then:
       1. Create ~/.config/tinylogi.toml (see the example in the release zip or repo).
       2. Allow Tinylogi under System Settings → Privacy & Security →
-         Input Monitoring and Accessibility. It restarts by itself within 30s.
+         Input Monitoring and Accessibility, and also Device Control & Data
+         Access if your macOS has it. It restarts by itself within 30s.
 
     Log: /tmp/tinylogi.log
   EOS
