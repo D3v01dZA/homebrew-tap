@@ -1,6 +1,6 @@
 cask "tinylogi" do
-  version "0.3.0"
-  sha256 "507b212d61831ebb9b4b13fe9f3148d81012fd049446a365f8e7850a366af640"
+  version "0.4.0"
+  sha256 "95170c528f6baaa0b9b6d2dc40002292c3998cf3538dd1cb417c7bcf679e82a7"
 
   url "https://github.com/D3v01dZA/tinylogi/releases/download/v#{version}/Tinylogi-#{version}.zip"
   name "tinylogi"
