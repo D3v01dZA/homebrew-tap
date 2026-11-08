@@ -10,6 +10,7 @@ cask "tinylogi" do
   depends_on macos: ">= :ventura"
 
   app "Tinylogi.app"
+  binary "#{appdir}/Tinylogi.app/Contents/MacOS/tinylogi"
   artifact "net.caltona.tinylogi.plist",
            target: "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"
 
@@ -38,6 +39,7 @@ cask "tinylogi" do
          Input Monitoring and Accessibility, and also Device Control & Data
          Access if your macOS has it. It restarts by itself within 30s.
 
+    After editing the config, apply it with: tinylogi --reload
     Log: /tmp/tinylogi.log
   EOS
 end
