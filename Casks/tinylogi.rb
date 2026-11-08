@@ -14,23 +14,31 @@ cask "tinylogi" do
   artifact "net.caltona.tinylogi.plist",
            target: "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"
 
+  # Steps that may fail use Kernel#system: Cask's system_command raises, which aborts and rolls
+  # back the whole install.
   postflight do
     # The app is signed with a personal certificate; macOS kills it at launch unless that
     # certificate is trusted for code signing. Ask (with macOS's password dialog) only if it isn't.
     cert = "#{staged_path}/tinylogi-cert.pem"
-    trusted = system_command("/usr/bin/security",
-                             args:         ["verify-cert", "-c", cert, "-p", "codeSign", "-L", "-q"],
-                             print_stderr: false).success?
-    unless trusted
-      system_command "/usr/bin/security",
-                     args: ["add-trusted-cert", "-r", "trustRoot", "-p", "codeSign",
-                            "-k", "#{Dir.home}/Library/Keychains/login.keychain-db", cert]
+    unless system("/usr/bin/security", "verify-cert", "-c", cert, "-p", "codeSign", "-L", "-q",
+                  [:out, :err] => File::NULL)
+      system "/usr/bin/security", "add-trusted-cert", "-r", "trustRoot", "-p", "codeSign",
+             "-k", "#{Dir.home}/Library/Keychains/login.keychain-db", cert
     end
     # Not notarized, so skip Gatekeeper's download check.
     system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Tinylogi.app"]
-    system_command "/bin/launchctl",
-                   args: ["bootstrap", "gui/#{Process.uid}",
-                          "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"]
+    # On upgrade the old job may still be registered or tearing down; bootstrap fails with
+    # EIO until launchd has let go of it, so stop it and retry briefly.
+    domain = "gui/#{Process.uid}"
+    system "/bin/launchctl", "bootout", "#{domain}/net.caltona.tinylogi", [:out, :err] => File::NULL
+    plist = "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"
+    started = 10.times.any? do
+      next true if system("/bin/launchctl", "bootstrap", domain, plist, [:out, :err] => File::NULL)
+
+      sleep 1
+      false
+    end
+    opoo "Could not start tinylogi; run: launchctl bootstrap #{domain} #{plist}" unless started
   end
 
   uninstall launchctl: "net.caltona.tinylogi"
