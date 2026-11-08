@@ -25,13 +25,15 @@ cask "tinylogi" do
       system "/usr/bin/security", "add-trusted-cert", "-r", "trustRoot", "-p", "codeSign",
              "-k", "#{Dir.home}/Library/Keychains/login.keychain-db", cert
     end
-    # Not notarized, so skip Gatekeeper's download check.
+    # Not notarized, so skip Gatekeeper's download check. launchd also refuses to load a
+    # LaunchAgent that still carries the download quarantine flag.
+    plist = "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"
     system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Tinylogi.app"]
+    system_command "/usr/bin/xattr", args: ["-d", "com.apple.quarantine", plist]
     # On upgrade the old job may still be registered or tearing down; bootstrap fails with
     # EIO until launchd has let go of it, so stop it and retry briefly.
     domain = "gui/#{Process.uid}"
     system "/bin/launchctl", "bootout", "#{domain}/net.caltona.tinylogi", [:out, :err] => File::NULL
-    plist = "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"
     started = 10.times.any? do
       next true if system("/bin/launchctl", "bootstrap", domain, plist, [:out, :err] => File::NULL)
 
