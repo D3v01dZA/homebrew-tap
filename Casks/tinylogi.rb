@@ -7,7 +7,7 @@ cask "tinylogi" do
   desc "Minimal config daemon for Logitech HID++ mice"
   homepage "https://github.com/D3v01dZA/tinylogi"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "Tinylogi.app"
   binary "#{appdir}/Tinylogi.app/Contents/MacOS/tinylogi"
@@ -43,7 +43,11 @@ cask "tinylogi" do
     opoo "Could not start tinylogi; run: launchctl bootstrap #{domain} #{plist}" unless started
   end
 
-  uninstall launchctl: "net.caltona.tinylogi"
+  # Stop the job but keep its plist: `uninstall launchctl:` would also delete the plist, and then
+  # Homebrew fails to move the `artifact` back, aborting upgrades and uninstalls.
+  uninstall_preflight do
+    system "/bin/launchctl", "bootout", "gui/#{Process.uid}/net.caltona.tinylogi", [:out, :err] => File::NULL
+  end
 
   zap trash: "~/.config/tinylogi.toml"
 
