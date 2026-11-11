@@ -17,14 +17,6 @@ cask "tinylogi" do
   # Steps that may fail use Kernel#system: Cask's system_command raises, which aborts and rolls
   # back the whole install.
   postflight do
-    # The app is signed with a personal certificate; macOS kills it at launch unless that
-    # certificate is trusted for code signing. Ask (with macOS's password dialog) only if it isn't.
-    cert = "#{staged_path}/tinylogi-cert.pem"
-    unless system("/usr/bin/security", "verify-cert", "-c", cert, "-p", "codeSign", "-L", "-q",
-                  [:out, :err] => File::NULL)
-      system "/usr/bin/security", "add-trusted-cert", "-r", "trustRoot", "-p", "codeSign",
-             "-k", "#{Dir.home}/Library/Keychains/login.keychain-db", cert
-    end
     # Not notarized, so skip Gatekeeper's download check. launchd also refuses to load a
     # LaunchAgent that still carries the download quarantine flag.
     plist = "#{Dir.home}/Library/LaunchAgents/net.caltona.tinylogi.plist"
@@ -53,12 +45,11 @@ cask "tinylogi" do
 
   caveats <<~EOS
     tinylogi is signed with a personal certificate (SHA-1
-    46:09:5E:CF:A5:9F:B4:43:E0:66:93:E5:A4:5C:3C:BA:5A:EF:95:13), which the
-    install trusts for code signing after asking for your password. If that
-    was skipped, macOS refuses to launch tinylogi; trust it by hand with:
-      curl -fsSLO https://raw.githubusercontent.com/D3v01dZA/tinylogi/master/macos/tinylogi-cert.pem
+    46:09:5E:CF:A5:9F:B4:43:E0:66:93:E5:A4:5C:3C:BA:5A:EF:95:13). macOS
+    refuses to launch it until that certificate is trusted for code signing.
+    Once per Mac, run:
       security add-trusted-cert -r trustRoot -p codeSign \\
-        -k ~/Library/Keychains/login.keychain-db tinylogi-cert.pem
+        -k ~/Library/Keychains/login.keychain-db #{staged_path}/tinylogi-cert.pem
 
     Then:
       1. Create ~/.config/tinylogi.toml (see the example in the release zip or repo).
